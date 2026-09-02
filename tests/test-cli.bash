@@ -28,10 +28,18 @@ assert_eq "/tmp/Game Path" "$MGS_CLI_PATH" "path with spaces is preserved"
 assert_eq "1" "$MGS_CLI_DRY_RUN" "dry-run is enabled"
 assert_eq "1" "$MGS_CLI_ASSUME_YES" "yes is enabled"
 
-mgs_cli_parse game_parser --zip=release.zip --version v1.2.3 --reset-ini
+mgs_cli_parse game_parser --zip=release.zip --reset-ini
 assert_eq "release.zip" "$MGS_CLI_ZIP" "equals-form ZIP is parsed"
-assert_eq "v1.2.3" "$MGS_CLI_VERSION" "version is parsed"
 assert_eq "1" "$MGS_CLI_RESET_INI" "reset INI is parsed"
+
+mgs_cli_parse game_parser --version v1.2.3
+assert_eq "v1.2.3" "$MGS_CLI_VERSION" "version is parsed"
+
+set +e
+mgs_cli_parse game_parser --zip release.zip --version v1.2.3 >/dev/null 2>&1
+status=$?
+set -e
+assert_status 64 "$status" "ZIP and version cannot be combined"
 
 set +e
 mgs_cli_parse game_parser --list --uninstall >/dev/null 2>&1

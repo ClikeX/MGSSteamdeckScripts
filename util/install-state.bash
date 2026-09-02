@@ -67,6 +67,7 @@ mgs_state_owned_files() {
 	{
 		[[ -f $current ]] && cat "$current"
 		[[ -n $legacy && -f $legacy ]] && cat "$legacy"
+		true
 	} | awk 'NF && !seen[$0]++'
 }
 

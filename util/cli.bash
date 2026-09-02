@@ -171,5 +171,10 @@ mgs_cli_parse() {
 		return 64
 	fi
 
+	if [[ -n $MGS_CLI_ZIP && -n $MGS_CLI_VERSION ]]; then
+		mgs_cli_error "--zip and --version cannot be used together"
+		return 64
+	fi
+
 	return 0
 }
