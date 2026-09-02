@@ -152,6 +152,7 @@ mgs_installer_set_launch_options() {
 	local localconfig
 	local -a command
 
+	mgs_require_command python3 || return
 	if mgs_installer_steam_running && (( ! MGS_CLI_ASSUME_YES )); then
 		mgs_error "Steam is running; close it before changing launch options"
 		return 1
