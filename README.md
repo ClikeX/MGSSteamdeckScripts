@@ -1,2 +1,2 @@
 # MGSSteamdeckScripts
-Installer scripts for MGSHDFix, MGSPatriotFix, and MGSM2Fix
+Installer scripts for MGSHDFix, MGSPatriotFix, MGSVfix, and MGSM2Fix
