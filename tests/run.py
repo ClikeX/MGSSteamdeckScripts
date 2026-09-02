@@ -25,7 +25,7 @@ def run_bash_tests() -> bool:
     success = True
     for test_file in sorted(TESTS.glob("test-*.bash")):
         print(f"\n# {test_file.name}", flush=True)
-        result = subprocess.run(["bash", str(test_file)], check=False)
+        result = subprocess.run(["bash", "-e", str(test_file)], check=False)
         success = result.returncode == 0 and success
     return success
 

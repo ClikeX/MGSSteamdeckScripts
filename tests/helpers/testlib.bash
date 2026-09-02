@@ -42,6 +42,16 @@ assert_file_exists() {
 	test_pass "$message"
 }
 
+assert_contains() {
+	local haystack=$1
+	local needle=$2
+	local message=${3:-text contains expected value}
+
+	[[ $haystack == *"$needle"* ]] ||
+		test_fail "$message (missing '$needle')"
+	test_pass "$message"
+}
+
 make_test_tmp() {
 	TEST_TMP=$(mktemp -d "${TMPDIR:-/tmp}/mgs-installers-test.XXXXXX")
 	export TEST_TMP
