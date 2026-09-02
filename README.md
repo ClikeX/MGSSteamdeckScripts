@@ -1,5 +1,8 @@
 # MGS Steam Deck Installers
 
+> **Disclaimer:** This project is entirely vibe-coded and intended for
+> personal use. Review the scripts and use them at your own risk.
+
 Per-game installers for community fixes used by Metal Gear titles on Steam
 Deck and desktop Linux.
 
