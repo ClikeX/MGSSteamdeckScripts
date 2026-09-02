@@ -9,11 +9,11 @@ INSTALLER_DIR=$(
 # shellcheck source=util/installer-core.bash
 source "$INSTALLER_DIR/../../util/installer-core.bash"
 mgs_installer_init "${BASH_SOURCE[0]}"
+# shellcheck source=util/mgshdfix-installer.bash
+source "$MGS_UTIL_DIR/mgshdfix-installer.bash"
 
 readonly APPID=2131640
 readonly GAME_MARKER="METAL GEAR SOLID2.exe"
-readonly COMPONENT=mgshdfix
-readonly REPOSITORY=ShizCalev/MGSHDFix
 readonly OVERRIDES='wininet=n,b;winhttp=n,b'
 
 usage() {
@@ -56,7 +56,7 @@ TARGET=$(mgs_installer_resolve_target "$APPID" "$GAME_MARKER")
 
 if (( MGS_CLI_LIST )); then
 	mgs_info "Metal Gear Solid 2: $TARGET"
-	if mgs_state_has_state "$TARGET" "$COMPONENT"; then
+	if mgs_state_has_state "$TARGET" mgshdfix; then
 		mgs_info "MGSHDFix: installed"
 	else
 		mgs_info "MGSHDFix: not installed by this installer"
@@ -70,7 +70,7 @@ if (( MGS_CLI_SET_LAUNCH_OPTIONS )); then
 fi
 
 if (( MGS_CLI_UNINSTALL )); then
-	if mgs_state_uninstall "$TARGET" "$COMPONENT" "$MGS_CLI_DRY_RUN"; then
+	if mgs_state_uninstall "$TARGET" mgshdfix "$MGS_CLI_DRY_RUN"; then
 		mgs_info "MGSHDFix removed from $TARGET"
 		mgs_info "MGSHDFix.settings was preserved because it is user-generated."
 		mgs_info "Remove its WINEDLLOVERRIDES entries from Steam if no other mod needs them."
@@ -88,47 +88,17 @@ mgs_require_command python3
 mgs_require_command curl
 mgs_installer_create_workspace mgs2
 
-if [[ -n $MGS_CLI_ZIP ]]; then
-	ZIP=$(mgs_installer_absolute_file "$MGS_CLI_ZIP")
-	mgs_step "Using local MGSHDFix archive $(basename -- "$ZIP")"
-else
-	mgs_step "Resolving MGSHDFix release"
-	IFS=$'\t' read -r RELEASE_TAG ASSET_NAME ASSET_URL < <(
-		mgs_installer_github_release "$REPOSITORY" MGSHDFix
-	)
-	[[ -n ${ASSET_URL:-} ]] || mgs_die "no MGSHDFix release asset was resolved"
-	mgs_info "Release: $RELEASE_TAG"
-	mgs_info "Asset: $ASSET_NAME"
-	ZIP=$MGS_WORK_DIR/mgshdfix.zip
-	mgs_installer_download "$ASSET_URL" "$ZIP"
-fi
-
-mgs_step "Validating and extracting MGSHDFix"
-SOURCE=$(mgs_installer_extract_archive "$ZIP" "$MGS_WORK_DIR/payload")
-
-MGSHDFIX_INI_PATHS=()
-MGSHDFIX_STALE_PATHS=(
-	d3d11.dll
-	MGSHDFix.asi
-	"MGSHDFix Config Tool.exe"
-)
+mgs_hdfix_acquire "$MGS_WORK_DIR"
 
 mgs_step "Installing MGSHDFix into $TARGET"
-mgs_payload_install "$TARGET" "$SOURCE" "$COMPONENT" 0 "$MGS_CLI_DRY_RUN" \
-	'(^|/)logs/|(^|/)MGSHDFix\.settings$' \
-	'(^|/)MGSHDFix\.asi$' MGSHDFIX_INI_PATHS MGSHDFIX_STALE_PATHS
+mgs_hdfix_install "$TARGET" "$MGS_CLI_DRY_RUN"
 
 if (( MGS_CLI_DRY_RUN )); then
 	mgs_info "Dry run complete; nothing was written."
 	exit 0
 fi
 
-CONFIG_TOOL_REL=
-while IFS= read -r RELATIVE_PATH; do
-	case "${RELATIVE_PATH,,}" in
-		*config?tool*.exe) CONFIG_TOOL_REL=$RELATIVE_PATH ;;
-	esac
-done < <(mgs_payload_files "$SOURCE" '(^|/)logs/')
+CONFIG_TOOL_REL=$(mgs_hdfix_config_tool "$MGS_HDFIX_SOURCE" || true)
 
 cat <<EOF
 
