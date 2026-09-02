@@ -4,6 +4,7 @@ mgs_hdfix_acquire() {
 	local workspace=$1
 	local zip release_tag asset_name asset_url
 
+	mkdir -p "$workspace"
 	if [[ -n $MGS_CLI_ZIP ]]; then
 		zip=$(mgs_installer_absolute_file "$MGS_CLI_ZIP") || return
 		mgs_step "Using local MGSHDFix archive $(basename -- "$zip")"

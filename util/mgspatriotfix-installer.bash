@@ -33,13 +33,68 @@ mgs_patriotfix_parse_option() {
 	esac
 }
 
-mgs_patriotfix_main() {
-	local target zip source release_tag asset_name asset_url status
-	local config_tool_relative=
-	local relative_path
-	local -a settings_command
+mgs_patriotfix_acquire() {
+	local workspace=$1
+	local zip_override=${2-}
+	local version=${3-}
+	local zip release_tag asset_name asset_url
+
+	mkdir -p "$workspace"
+	if [[ -n $zip_override ]]; then
+		zip=$(mgs_installer_absolute_file "$zip_override") || return
+		mgs_step "Using local MGSPatriotFix archive $(basename -- "$zip")"
+	else
+		mgs_step "Resolving MGSPatriotFix release"
+		IFS=$'\t' read -r release_tag asset_name asset_url < <(
+			mgs_installer_github_release ShizCalev/MGSPatriotFix \
+				"$MGS_PATRIOTFIX_ASSET_MATCH" "$MGS_PATRIOTFIX_ASSET_REJECT" \
+				'\.zip$' "$version"
+		)
+		[[ -n ${asset_url:-} ]] ||
+			mgs_die "no MGSPatriotFix release asset was resolved for $MGS_GAME_NAME"
+		mgs_info "Release: $release_tag"
+		mgs_info "Asset: $asset_name"
+		zip=$workspace/mgspatriotfix.zip
+		mgs_installer_download "$asset_url" "$zip"
+	fi
+
+	mgs_step "Validating and extracting MGSPatriotFix"
+	MGS_PATRIOTFIX_SOURCE=$(
+		mgs_installer_extract_archive "$zip" "$workspace/mgspatriotfix"
+	) || return
+}
+
+mgs_patriotfix_install() {
+	local target=$1
+	local dry_run=$2
 	local -a patriotfix_ini_paths=()
 	local -a patriotfix_stale_paths=()
+
+	mgs_payload_install "$target" "$MGS_PATRIOTFIX_SOURCE" mgspatriotfix 0 \
+		"$dry_run" '(^|/)MGSPatriotFix\.settings$' \
+		'(^|/)MGSPatriotFix\.asi$' patriotfix_ini_paths \
+		patriotfix_stale_paths
+}
+
+mgs_patriotfix_config_tool() {
+	local source=$1
+	local relative_path
+
+	while IFS= read -r relative_path; do
+		case "${relative_path,,}" in
+			*config?tool*.exe)
+				printf '%s\n' "$relative_path"
+				return 0
+				;;
+		esac
+	done < <(mgs_payload_files "$source")
+	return 1
+}
+
+mgs_patriotfix_main() {
+	local target status
+	local config_tool_relative
+	local -a settings_command
 
 	MGS_PATRIOTFIX_WRITE_SETTINGS=0
 	mgs_cli_parse mgs_patriotfix_parse_option "$@" || return
@@ -105,44 +160,19 @@ mgs_patriotfix_main() {
 	mgs_require_command python3
 	mgs_require_command curl
 	mgs_installer_create_workspace mgspatriotfix
-
-	if [[ -n $MGS_CLI_ZIP ]]; then
-		zip=$(mgs_installer_absolute_file "$MGS_CLI_ZIP") || return
-		mgs_step "Using local MGSPatriotFix archive $(basename -- "$zip")"
-	else
-		mgs_step "Resolving MGSPatriotFix release"
-		IFS=$'\t' read -r release_tag asset_name asset_url < <(
-			mgs_installer_github_release ShizCalev/MGSPatriotFix \
-				"$MGS_PATRIOTFIX_ASSET_MATCH" "$MGS_PATRIOTFIX_ASSET_REJECT"
-		)
-		[[ -n ${asset_url:-} ]] ||
-			mgs_die "no MGSPatriotFix release asset was resolved for $MGS_GAME_NAME"
-		mgs_info "Release: $release_tag"
-		mgs_info "Asset: $asset_name"
-		zip=$MGS_WORK_DIR/mgspatriotfix.zip
-		mgs_installer_download "$asset_url" "$zip"
-	fi
-
-	mgs_step "Validating and extracting MGSPatriotFix"
-	source=$(mgs_installer_extract_archive "$zip" "$MGS_WORK_DIR/payload") ||
-		return
+	mgs_patriotfix_acquire "$MGS_WORK_DIR" "$MGS_CLI_ZIP" "$MGS_CLI_VERSION"
 
 	mgs_step "Installing MGSPatriotFix into $target"
-	mgs_payload_install "$target" "$source" mgspatriotfix 0 \
-		"$MGS_CLI_DRY_RUN" '(^|/)MGSPatriotFix\.settings$' \
-		'(^|/)MGSPatriotFix\.asi$' patriotfix_ini_paths \
-		patriotfix_stale_paths
+	mgs_patriotfix_install "$target" "$MGS_CLI_DRY_RUN"
 
 	if (( MGS_CLI_DRY_RUN )); then
 		mgs_info "Dry run complete; nothing was written."
 		return 0
 	fi
 
-	while IFS= read -r relative_path; do
-		case "${relative_path,,}" in
-			*config?tool*.exe) config_tool_relative=$relative_path ;;
-		esac
-	done < <(mgs_payload_files "$source")
+	config_tool_relative=$(
+		mgs_patriotfix_config_tool "$MGS_PATRIOTFIX_SOURCE" || true
+	)
 
 	cat <<EOF
 

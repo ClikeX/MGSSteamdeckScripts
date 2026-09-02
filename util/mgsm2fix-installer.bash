@@ -24,14 +24,54 @@ mgs_mgsm2fix_parse_option() {
 	return 1
 }
 
-mgs_mgsm2fix_main() {
-	local target zip source release_tag asset_name asset_url status
+mgs_mgsm2fix_acquire() {
+	local workspace=$1
+	local zip_override=${2-}
+	local version=${3-}
+	local zip release_tag asset_name asset_url
+
+	mkdir -p "$workspace"
+	if [[ -n $zip_override ]]; then
+		zip=$(mgs_installer_absolute_file "$zip_override") || return
+		mgs_step "Using local MGSM2Fix archive $(basename -- "$zip")"
+	else
+		mgs_step "Resolving MGSM2Fix release"
+		IFS=$'\t' read -r release_tag asset_name asset_url < <(
+			mgs_installer_github_release nuggslet/MGSM2Fix MGSM2Fix "" \
+				'\.zip$' "$version"
+		)
+		[[ -n ${asset_url:-} ]] ||
+			mgs_die "no MGSM2Fix release asset was resolved"
+		mgs_info "Release: $release_tag"
+		mgs_info "Asset: $asset_name"
+		zip=$workspace/mgsm2fix.zip
+		mgs_installer_download "$asset_url" "$zip"
+	fi
+
+	mgs_step "Validating and extracting MGSM2Fix"
+	MGS_MGSM2FIX_SOURCE=$(
+		mgs_installer_extract_archive "$zip" "$workspace/mgsm2fix"
+	) || return
+}
+
+mgs_mgsm2fix_install() {
+	local target=$1
+	local reset_ini=$2
+	local dry_run=$3
 	local -a mgsm2fix_ini_paths=(MGSM2Fix.ini)
 	local -a mgsm2fix_stale_paths=(
 		MGSM2Fix.asi
 		d3d11-x64.SHA512
 		dinput8-Win32.SHA512
 	)
+
+	mgs_payload_install "$target" "$MGS_MGSM2FIX_SOURCE" mgsm2fix \
+		"$reset_ini" "$dry_run" "" '\.(asi|dll)$' mgsm2fix_ini_paths \
+		mgsm2fix_stale_paths
+}
+
+mgs_mgsm2fix_main() {
+	local target status
 
 	mgs_cli_parse mgs_mgsm2fix_parse_option "$@" || return
 
@@ -76,31 +116,10 @@ mgs_mgsm2fix_main() {
 	mgs_require_command python3
 	mgs_require_command curl
 	mgs_installer_create_workspace mgsm2fix
-
-	if [[ -n $MGS_CLI_ZIP ]]; then
-		zip=$(mgs_installer_absolute_file "$MGS_CLI_ZIP") || return
-		mgs_step "Using local MGSM2Fix archive $(basename -- "$zip")"
-	else
-		mgs_step "Resolving MGSM2Fix release"
-		IFS=$'\t' read -r release_tag asset_name asset_url < <(
-			mgs_installer_github_release nuggslet/MGSM2Fix MGSM2Fix
-		)
-		[[ -n ${asset_url:-} ]] ||
-			mgs_die "no MGSM2Fix release asset was resolved"
-		mgs_info "Release: $release_tag"
-		mgs_info "Asset: $asset_name"
-		zip=$MGS_WORK_DIR/mgsm2fix.zip
-		mgs_installer_download "$asset_url" "$zip"
-	fi
-
-	mgs_step "Validating and extracting MGSM2Fix"
-	source=$(mgs_installer_extract_archive "$zip" "$MGS_WORK_DIR/payload") ||
-		return
+	mgs_mgsm2fix_acquire "$MGS_WORK_DIR" "$MGS_CLI_ZIP" "$MGS_CLI_VERSION"
 
 	mgs_step "Installing MGSM2Fix into $target"
-	mgs_payload_install "$target" "$source" mgsm2fix "$MGS_CLI_RESET_INI" \
-		"$MGS_CLI_DRY_RUN" "" '\.(asi|dll)$' mgsm2fix_ini_paths \
-		mgsm2fix_stale_paths
+	mgs_mgsm2fix_install "$target" "$MGS_CLI_RESET_INI" "$MGS_CLI_DRY_RUN"
 
 	if (( MGS_CLI_DRY_RUN )); then
 		mgs_info "Dry run complete; nothing was written."
