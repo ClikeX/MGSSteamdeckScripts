@@ -1,0 +1,15 @@
+[submodule "mods/MGSHDFix"]
+	path = mods/MGSHDFix
+	url = git@github.com:ShizCalev/MGSHDFix.git
+[submodule "mods/MGSPatriotFix"]
+	path = mods/MGSPatriotFix
+	url = git@github.com:ShizCalev/MGSPatriotFix.git
+[submodule "mods/MGSM2Fix"]
+	path = mods/MGSM2Fix
+	url = git@github.com:nuggslet/MGSM2Fix.git
+[submodule "mods/MGSVFix"]
+	path = mods/MGSVFix
+	url = ssh://git@codeberg.org/Lyall/MGSVFix.git
+[submodule "mods/MGS3CrouchWalk"]
+	path = mods/MGS3CrouchWalk
+	url = git@github.com:cipherxof/MGS3CrouchWalk.git
