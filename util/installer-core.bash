@@ -114,6 +114,7 @@ mgs_installer_forgejo_release() {
 	local match_regex=${3-}
 	local reject_regex=${4-}
 	local extension_regex=${5:-\\.zip$}
+	local version=${6-${MGS_CLI_VERSION}}
 	local -a command=(
 		"$MGS_UTIL_DIR/release_forgejo.py"
 		"$base_url"
@@ -121,7 +122,7 @@ mgs_installer_forgejo_release() {
 		--extension "$extension_regex"
 	)
 
-	[[ -n $MGS_CLI_VERSION ]] && command+=(--tag "$MGS_CLI_VERSION")
+	[[ -n $version ]] && command+=(--tag "$version")
 	[[ -n $match_regex ]] && command+=(--match "$match_regex")
 	[[ -n $reject_regex ]] && command+=(--reject "$reject_regex")
 	"${command[@]}"

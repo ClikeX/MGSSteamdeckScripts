@@ -24,10 +24,50 @@ mgs_mgsvfix_parse_option() {
 	return 1
 }
 
-mgs_mgsvfix_main() {
-	local target zip source release_tag asset_name asset_url status
+mgs_mgsvfix_acquire() {
+	local workspace=$1
+	local zip_override=${2-}
+	local version=${3-}
+	local zip release_tag asset_name asset_url
+
+	mkdir -p "$workspace"
+	if [[ -n $zip_override ]]; then
+		zip=$(mgs_installer_absolute_file "$zip_override") || return
+		mgs_step "Using local MGSVFix archive $(basename -- "$zip")"
+	else
+		mgs_step "Resolving MGSVFix release"
+		IFS=$'\t' read -r release_tag asset_name asset_url < <(
+			mgs_installer_forgejo_release https://codeberg.org Lyall/MGSVFix \
+				MGSVFix "" '\.zip$' "$version"
+		)
+		[[ -n ${asset_url:-} ]] ||
+			mgs_die "no MGSVFix release asset was resolved"
+		mgs_info "Release: $release_tag"
+		mgs_info "Asset: $asset_name"
+		zip=$workspace/mgsvfix.zip
+		mgs_installer_download "$asset_url" "$zip"
+	fi
+
+	mgs_step "Validating and extracting MGSVFix"
+	MGS_MGSVFIX_SOURCE=$(
+		mgs_installer_extract_archive "$zip" "$workspace/mgsvfix"
+	) || return
+}
+
+mgs_mgsvfix_install() {
+	local target=$1
+	local reset_ini=$2
+	local dry_run=$3
 	local -a mgsvfix_ini_paths=(MGSVFix.ini)
 	local -a mgsvfix_stale_paths=(winmm.dll dinput8.dll MGSVFix.asi)
+
+	mgs_payload_install "$target" "$MGS_MGSVFIX_SOURCE" mgsvfix \
+		"$reset_ini" "$dry_run" "" '(^|/)MGSVFix\.asi$' \
+		mgsvfix_ini_paths mgsvfix_stale_paths
+}
+
+mgs_mgsvfix_main() {
+	local target status
 
 	mgs_cli_parse mgs_mgsvfix_parse_option "$@" || return
 
@@ -71,32 +111,10 @@ mgs_mgsvfix_main() {
 	mgs_require_command python3
 	mgs_require_command curl
 	mgs_installer_create_workspace mgsvfix
-
-	if [[ -n $MGS_CLI_ZIP ]]; then
-		zip=$(mgs_installer_absolute_file "$MGS_CLI_ZIP") || return
-		mgs_step "Using local MGSVFix archive $(basename -- "$zip")"
-	else
-		mgs_step "Resolving MGSVFix release"
-		IFS=$'\t' read -r release_tag asset_name asset_url < <(
-			mgs_installer_forgejo_release https://codeberg.org Lyall/MGSVFix \
-				MGSVFix
-		)
-		[[ -n ${asset_url:-} ]] ||
-			mgs_die "no MGSVFix release asset was resolved"
-		mgs_info "Release: $release_tag"
-		mgs_info "Asset: $asset_name"
-		zip=$MGS_WORK_DIR/mgsvfix.zip
-		mgs_installer_download "$asset_url" "$zip"
-	fi
-
-	mgs_step "Validating and extracting MGSVFix"
-	source=$(mgs_installer_extract_archive "$zip" "$MGS_WORK_DIR/payload") ||
-		return
+	mgs_mgsvfix_acquire "$MGS_WORK_DIR" "$MGS_CLI_ZIP" "$MGS_CLI_VERSION"
 
 	mgs_step "Installing MGSVFix into $target"
-	mgs_payload_install "$target" "$source" mgsvfix "$MGS_CLI_RESET_INI" \
-		"$MGS_CLI_DRY_RUN" "" '(^|/)MGSVFix\.asi$' mgsvfix_ini_paths \
-		mgsvfix_stale_paths
+	mgs_mgsvfix_install "$target" "$MGS_CLI_RESET_INI" "$MGS_CLI_DRY_RUN"
 
 	if (( MGS_CLI_DRY_RUN )); then
 		mgs_info "Dry run complete; nothing was written."
