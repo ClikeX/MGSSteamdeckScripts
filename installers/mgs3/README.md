@@ -82,7 +82,7 @@ MGSHDFix. User-generated MGSHDFix settings are preserved.
 
 - Steam Deck or desktop Linux
 - Steam or Flatpak Steam
-- Bash, Python 3, and `curl`
+- Bash 5, Python 3, and `curl`
 - Protontricks only when using the MGSHDFix configuration tool
 
 Only published GitHub release assets are installed. The repository's `mods/`

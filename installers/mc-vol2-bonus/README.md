@@ -61,7 +61,7 @@ the DLL overrides from Steam afterward if no other mod requires them.
 
 - Steam Deck or desktop Linux
 - Steam or Flatpak Steam
-- Bash, Python 3, and `curl`
+- Bash 5, Python 3, and `curl`
 
 The installer downloads published release assets only. The repository's
 `mods/` directory is not used as an install source.

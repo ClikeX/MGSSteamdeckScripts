@@ -3,6 +3,14 @@
 Installs MGSPatriotFix and optional components for **Metal Gear Solid 4: Guns
 of the Patriots** (Steam AppID `2492670`) on Steam Deck or desktop Linux.
 
+## Usage
+
+```bash
+./installers/mgs4/install-mgs4.bash
+```
+
+Run `--help` for every supported component and maintenance option.
+
 ## Components
 
 | Component | Default | Source |
@@ -80,7 +88,7 @@ are always preserved.
 
 - Steam Deck or desktop Linux
 - Steam or Flatpak Steam
-- Bash, Python 3, and `curl`
+- Bash 5, Python 3, and `curl`
 - Protontricks only when using the PatriotFix configuration tool
 
 Only published release assets or explicit local files are installed. The
