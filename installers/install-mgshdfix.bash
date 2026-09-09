@@ -16,8 +16,10 @@ case "$MGS_LEGACY_GAME" in
 	mgs2)
 		for option in "${MGS_LEGACY_ARGS[@]}"; do
 			case "$option" in
-				--no-crouchwalk|--crouchwalk-zip|--crouchwalk-zip=*)
-					printf 'error: CrouchWalk options apply only to MGS3\n' >&2
+				--no-crouchwalk|--crouchwalk-zip|--crouchwalk-zip=*|\
+				--qcamo|--qcamo-zip|--qcamo-zip=*|\
+				--qcamo-version|--qcamo-version=*)
+					printf 'error: MGS3 component options apply only to MGS3\n' >&2
 					exit 64
 					;;
 			esac

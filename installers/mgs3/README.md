@@ -9,9 +9,11 @@ Collection Version** (Steam AppID `2131650`) on Steam Deck or desktop Linux.
 ./installers/mgs3/install-mgs3.bash
 ```
 
-Both components are installed by default. Use `--no-crouchwalk` for MGSHDFix
-only. The common `--zip` and `--version` options select the MGSHDFix source;
-use `--crouchwalk-zip` or `--crouchwalk-version` for CrouchWalk.
+MGSHDFix and CrouchWalk are installed by default. Use `--no-crouchwalk` for
+MGSHDFix only. Add `--qcamo` to install quick-camouflage support. The common
+`--zip` and `--version` options select the MGSHDFix source; use
+`--crouchwalk-zip` or `--crouchwalk-version` for CrouchWalk, and
+`--qcamo-zip` or `--qcamo-version` for qcamo.
 
 ## Installed components
 
@@ -19,11 +21,13 @@ use `--crouchwalk-zip` or `--crouchwalk-version` for CrouchWalk.
 |---|---|---|
 | MGSHDFix | Yes | [GitHub Releases](https://github.com/ShizCalev/MGSHDFix/releases) |
 | MGS3CrouchWalk | Yes | [GitHub Releases](https://github.com/cipherxof/MGS3CrouchWalk/releases) |
+| qcamo | No (`--qcamo`) | [GitHub Releases](https://github.com/zexk/mgs3-qcamo/releases) |
 
 MGSHDFix provides resolution, ultrawide, controller, launcher, visual,
 performance, and gameplay fixes. MGS3CrouchWalk adds slow and fast crouch
 walking, enemy-visibility integration, camo-index adjustments, and localized
-animation assets.
+animation assets. Optional qcamo adds quick camouflage switching during
+gameplay.
 
 Metal Gear and Metal Gear 2: Solid Snake (MSX) are content within the MGS3
 Steam installation. MGSHDFix's fixes for those games are therefore included
@@ -32,7 +36,7 @@ through this installer rather than a separate installer.
 ## Loader and launch options
 
 CrouchWalk's bundled `d3d11.dll` is deliberately excluded. MGSHDFix supplies
-the only ASI loader and loads `MGS3CrouchWalk.asi`.
+the only ASI loader and loads `MGS3CrouchWalk.asi` and optional `qcamo.asi`.
 
 ```text
 WINEDLLOVERRIDES="wininet=n,b;winhttp=n,b" %command%
@@ -63,6 +67,7 @@ Each component has separate state:
 ```text
 <game>/.mgs-installer/mgshdfix/
 <game>/.mgs-installer/mgs3crouchwalk/
+<game>/.mgs-installer/mgs3qcamo/   (only when `--qcamo` is selected)
 ```
 
 Overwritten localized animation archives are backed up before replacement.
