@@ -20,7 +20,13 @@ mgs_ih_backup_root() {
 }
 
 mgs_ih_file_size() {
-	stat -f %z "$1" 2>/dev/null || stat -c %s "$1"
+	local size
+
+	size=$(stat -c %s -- "$1" 2>/dev/null) ||
+		size=$(stat -f %z -- "$1" 2>/dev/null) ||
+		return 1
+	[[ $size =~ ^[0-9]+$ ]] || return 1
+	printf '%s\n' "$size"
 }
 
 mgs_ih_available_bytes() {
