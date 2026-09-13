@@ -34,7 +34,8 @@ Optional texture add-ons:
 
 Only one texture add-on may be selected at a time. The 4x GitHub release is
 published as multipart `.zip.001`, `.zip.002`, ... assets; the installer
-downloads and assembles those parts automatically before validation.
+downloads and assembles those parts automatically before validation. The
+`--textures-*-zip` and `--textures-*-version` options also select that add-on.
 
 ## Steam launch options
 

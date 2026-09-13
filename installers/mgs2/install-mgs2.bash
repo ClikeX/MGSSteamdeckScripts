@@ -386,16 +386,6 @@ if [[ -n $MGS2_TEXTURE_4X_ZIP && -n $MGS2_TEXTURE_4X_VERSION ]]; then
 	mgs_cli_error "--textures-4x-zip and --textures-4x-version cannot be combined"
 	exit $?
 fi
-if [[ -n $MGS2_TEXTURE_PACK && $MGS2_TEXTURE_PACK != 2x ]] &&
-	[[ -n $MGS2_TEXTURE_2X_ZIP || -n $MGS2_TEXTURE_2X_VERSION ]]; then
-	mgs_cli_error "2x texture source options require --textures-2x"
-	exit $?
-fi
-if [[ -n $MGS2_TEXTURE_PACK && $MGS2_TEXTURE_PACK != 4x ]] &&
-	[[ -n $MGS2_TEXTURE_4X_ZIP || -n $MGS2_TEXTURE_4X_VERSION ]]; then
-	mgs_cli_error "4x texture source options require --textures-4x"
-	exit $?
-fi
 if (( MGS_CLI_RESET_INI && ! MGS2_WANT_COMMUNITY_BUGFIX )); then
 	mgs_cli_error "--reset-ini requires the Community Bugfix base package"
 	exit $?

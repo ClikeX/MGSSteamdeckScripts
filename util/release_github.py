@@ -112,7 +112,7 @@ def resolve_release(
         raise GitHubReleaseError(f"could not read GitHub release metadata: {exc}") from exc
     else:
         release_tag = str(release.get("tag_name") or "")
-        prefix = f"https://github.com/{repo}/releases/download/{release_tag}/"
+        prefix = f"{web_base}/{repo}/releases/download/{release_tag}/"
         return select_release_asset(
             release,
             match=match,
@@ -158,9 +158,7 @@ def resolve_release(
         match=match,
         reject=reject,
         extension=extension,
-        download_prefix=(
-            f"https://github.com/{repo}/releases/download/{fallback_tag}/"
-        ),
+        download_prefix=(f"{web_base}/{repo}/releases/download/{fallback_tag}/"),
     )
 
 
@@ -196,7 +194,7 @@ def resolve_release_assets(
         raise GitHubReleaseError(f"could not read GitHub release metadata: {exc}") from exc
     else:
         release_tag = str(release.get("tag_name") or "")
-        prefix = f"https://github.com/{repo}/releases/download/{release_tag}/"
+        prefix = f"{web_base}/{repo}/releases/download/{release_tag}/"
         return select_release_assets(
             release,
             match=match,
@@ -242,9 +240,7 @@ def resolve_release_assets(
         match=match,
         reject=reject,
         extension=extension,
-        download_prefix=(
-            f"https://github.com/{repo}/releases/download/{fallback_tag}/"
-        ),
+        download_prefix=(f"{web_base}/{repo}/releases/download/{fallback_tag}/"),
     )
 
 
