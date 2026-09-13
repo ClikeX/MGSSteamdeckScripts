@@ -315,12 +315,14 @@ mgs2_bugfix_acquire_textures() {
 					[[ -n ${release_tag:-} && $release_tag != "$part_tag" ]] &&
 						mgs_die "resolved 4x texture assets did not share one release tag"
 					release_tag=$part_tag
+					if (( expected_part == 1 )); then
+						mgs_info "Release: $release_tag"
+					fi
 					mgs_info "Asset: $part_name"
 					mgs_installer_download "$part_url" "$workspace/$part_name"
 					cat "$workspace/$part_name" >> "$concat_zip"
 					expected_part=$((expected_part + 1))
 				done
-				mgs_info "Release: $release_tag"
 				zip=$concat_zip
 				;;
 			*)
