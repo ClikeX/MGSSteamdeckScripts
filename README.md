@@ -11,7 +11,7 @@ Deck and desktop Linux.
 | Game | AppID | Default components | Optional components |
 |---|---:|---|---|
 | [Metal Gear Solid](installers/mgs1/README.md) | `2131630` | MGSM2Fix | None |
-| [Metal Gear Solid 2](installers/mgs2/README.md) | `2131640` | MGSHDFix | None |
+| [Metal Gear Solid 2](installers/mgs2/README.md) | `2131640` | MGSHDFix, MGS2 Community Bugfix Compilation | Optional 2x or 4x texture add-on |
 | [Metal Gear Solid 3](installers/mgs3/README.md) | `2131650` | MGSHDFix, MGS3CrouchWalk | CrouchWalk may be disabled |
 | [Metal Gear Solid 4](installers/mgs4/README.md) | `2492670` | MGSPatriotFix | Flashback MGSM2Fix, MGS4 Mod Loader |
 | [Peace Walker](installers/mgspw/README.md) | `2492660` | MGSPatriotFix | None |
@@ -58,8 +58,8 @@ Launch-option editing preserves unrelated arguments and creates a backup of
 
 Installers prefer published release assets:
 
-- GitHub Releases for MGSM2Fix, MGSHDFix, MGS3CrouchWalk, MGSPatriotFix, and
-  MGS4 Mod Loader;
+- GitHub Releases for MGSM2Fix, MGSHDFix, MGS2 Community Bugfix Compilation,
+  MGS3CrouchWalk, MGSPatriotFix, and MGS4 Mod Loader;
 - Codeberg Forgejo Releases for MGSVFix.
 
 Stable releases are selected by default. Source archives, repository source

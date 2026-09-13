@@ -11,7 +11,11 @@ from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import quote, urljoin, urlparse
 
-from release_assets import ReleaseSelectionError, select_release_asset
+from release_assets import (
+    ReleaseSelectionError,
+    select_release_asset,
+    select_release_assets,
+)
 
 
 class GitHubReleaseError(RuntimeError):
@@ -160,6 +164,90 @@ def resolve_release(
     )
 
 
+def resolve_release_assets(
+    repo: str,
+    *,
+    tag: str | None = None,
+    match: str | None = None,
+    reject: str | None = None,
+    extension: str = r"\.zip$",
+    api_base: str = "https://api.github.com",
+    web_base: str = "https://github.com",
+) -> tuple[str, list[tuple[str, str]]]:
+    api_base = api_base.rstrip("/")
+    web_base = web_base.rstrip("/")
+    encoded_tag = quote(tag, safe="") if tag else None
+    endpoint = (
+        f"{api_base}/repos/{repo}/releases/tags/{encoded_tag}"
+        if encoded_tag
+        else f"{api_base}/repos/{repo}/releases/latest"
+    )
+
+    try:
+        release = _fetch_json(endpoint)
+    except urllib.error.HTTPError as exc:
+        if exc.code not in (403, 429):
+            if exc.code == 404:
+                raise GitHubReleaseError(f"GitHub release not found for {repo}") from exc
+            raise GitHubReleaseError(
+                f"GitHub API returned HTTP {exc.code} for {repo}"
+            ) from exc
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        raise GitHubReleaseError(f"could not read GitHub release metadata: {exc}") from exc
+    else:
+        release_tag = str(release.get("tag_name") or "")
+        prefix = f"https://github.com/{repo}/releases/download/{release_tag}/"
+        return select_release_assets(
+            release,
+            match=match,
+            reject=reject,
+            extension=extension,
+            allow_prerelease=tag is not None,
+            download_prefix=prefix,
+        )
+
+    fallback_tag = tag
+    if fallback_tag is None:
+        try:
+            with _request(f"{web_base}/{repo}/releases/latest") as response:
+                effective_url = response.geturl()
+        except (urllib.error.URLError, TimeoutError) as exc:
+            raise GitHubReleaseError(
+                f"GitHub rate-limit fallback could not resolve a tag: {exc}"
+            ) from exc
+
+        prefix = f"{web_base}/{repo}/releases/tag/"
+        if not effective_url.startswith(prefix):
+            raise GitHubReleaseError(
+                "GitHub rate-limit fallback did not resolve a release tag"
+            )
+        fallback_tag = effective_url[len(prefix) :]
+
+    if not fallback_tag or "/" in fallback_tag:
+        raise GitHubReleaseError("unsafe GitHub release tag in fallback")
+
+    try:
+        with _request(
+            f"{web_base}/{repo}/releases/expanded_assets/{quote(fallback_tag, safe='')}"
+        ) as response:
+            html = response.read().decode("utf-8", errors="replace")
+    except (urllib.error.URLError, TimeoutError) as exc:
+        raise GitHubReleaseError(
+            f"could not read GitHub release assets page: {exc}"
+        ) from exc
+
+    release = _release_from_html(repo, fallback_tag, html)
+    return select_release_assets(
+        release,
+        match=match,
+        reject=reject,
+        extension=extension,
+        download_prefix=(
+            f"https://github.com/{repo}/releases/download/{fallback_tag}/"
+        ),
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Resolve a GitHub release asset")
     parser.add_argument("repo", help="Repository in owner/name form")
@@ -167,6 +255,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--match")
     parser.add_argument("--reject")
     parser.add_argument("--extension", default=r"\.zip$")
+    parser.add_argument("--all", action="store_true")
     parser.add_argument(
         "--api-base",
         default="https://api.github.com",
@@ -180,20 +269,35 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        selected = resolve_release(
-            args.repo,
-            tag=args.tag,
-            match=args.match,
-            reject=args.reject,
-            extension=args.extension,
-            api_base=args.api_base,
-            web_base=args.web_base,
-        )
+        if args.all:
+            release_tag, assets = resolve_release_assets(
+                args.repo,
+                tag=args.tag,
+                match=args.match,
+                reject=args.reject,
+                extension=args.extension,
+                api_base=args.api_base,
+                web_base=args.web_base,
+            )
+        else:
+            selected = resolve_release(
+                args.repo,
+                tag=args.tag,
+                match=args.match,
+                reject=args.reject,
+                extension=args.extension,
+                api_base=args.api_base,
+                web_base=args.web_base,
+            )
     except (GitHubReleaseError, ReleaseSelectionError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
-    print("\t".join(selected))
+    if args.all:
+        for name, url in assets:
+            print("\t".join((release_tag, name, url)))
+    else:
+        print("\t".join(selected))
     return 0
 
 

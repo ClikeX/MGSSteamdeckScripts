@@ -1,7 +1,8 @@
 # Metal Gear Solid 2 Installer
 
-Installs MGSHDFix for **Metal Gear Solid 2: Master Collection Version** (Steam
-AppID `2131640`) on Steam Deck or desktop Linux.
+Installs **MGSHDFix** and the **MGS2 Community Bugfix Compilation** for
+**Metal Gear Solid 2: Master Collection Version** (Steam AppID `2131640`) on
+Steam Deck or desktop Linux.
 
 ## Usage
 
@@ -9,23 +10,31 @@ AppID `2131640`) on Steam Deck or desktop Linux.
 ./installers/mgs2/install-mgs2.bash
 ```
 
-Use `--path PATH` for a manually selected game directory or `--zip PATH` for an
-offline release archive. Run `--help` for the complete CLI.
+Use `--path PATH` for a manually selected game directory, `--zip PATH` for an
+offline MGSHDFix archive, and `--community-bugfix-zip PATH` for an offline
+Community Bugfix base archive. Run `--help` for the complete CLI.
 
-## Installed component
+## Installed components
 
 | Component | Default | Source |
 |---|---|---|
 | MGSHDFix | Yes | [GitHub Releases](https://github.com/ShizCalev/MGSHDFix/releases) |
+| MGS2 Community Bugfix Compilation - Base | Yes | [GitHub Releases](https://github.com/ShizCalev/MGS2-Community-Bugfix-Compilation/releases) |
+| MGS2 Community Bugfix Compilation - 2x texture add-on | Optional | Same Community Bugfix release |
+| MGS2 Community Bugfix Compilation - 4x texture add-on | Optional | Same Community Bugfix release |
 
-MGSHDFix provides custom-resolution and ultrawide support, HUD and window-mode
-controls, launcher and logo skipping, controller improvements, visual fixes,
-restored effects, performance fixes, and optional gameplay adjustments. The
-installer installs the fix but does not choose those settings.
+Use `--no-community-bugfix` for MGSHDFix-only installs.
 
-Release `logs/` content is excluded. Files from older root-level layouts are
-removed during tracked updates so they cannot conflict with the current
-`plugins/`, `wininet.dll`, and `winhttp.dll` layout.
+Optional texture add-ons:
+
+- `--textures-2x`
+- `--textures-4x`
+- `--textures-2x-zip PATH`
+- `--textures-4x-zip PATH`
+
+Only one texture add-on may be selected at a time. The 4x GitHub release is
+published as multipart `.zip.001`, `.zip.002`, ... assets; the installer
+downloads and assembles those parts automatically before validation.
 
 ## Steam launch options
 
@@ -53,18 +62,49 @@ Run `plugins/MGSHDFix Config Tool.exe` to configure the fix and generate
 Select any game prefix when prompted. If no prefix appears, add the
 configuration tool as a non-Steam game and launch it through Steam once.
 
-`MGSHDFix.settings` is user-generated and is never replaced or removed by this
-installer. MGSHDFix provides no release INI, so `--reset-ini` is intentionally
-rejected.
+The Community Bugfix base installs:
 
-State and backups are stored under:
+- `plugins/MGS2-Community-Bugfix-Compilation.asi`
+- `plugins/MGS2-Community-Bugfix-Compilation.ini`
+
+`MGSHDFix.settings` is user-generated and is never replaced or removed by this
+installer. `MGS2-Community-Bugfix-Compilation.ini` is preserved by default; if
+release defaults change, the installer writes
+`plugins/MGS2-Community-Bugfix-Compilation.ini.new`. Use `--reset-ini` to back
+up and replace the live Community Bugfix INI with the release defaults.
+
+The installer also writes a mod-order note at:
+
+```text
+<game>/.mgs-installer/mgs2communitybugfix/mod-order.txt
+```
+
+Recommended load order:
+
+1. MGSHDFix
+2. Knight_Killer's MGS2 Better Audio Mod
+3. MGS2 Community Bugfix Compilation - Base
+4. MGS2 Community Bugfix Compilation - AI Upscaled Texture Add-on
+5. MGS2 Demastered Texture Pack
+6. All other mods
+
+The installer always applies the Community Bugfix base before an optional 2x or
+4x texture add-on so direct installs keep the required overwrite order.
+
+## State and backups
+
+Tracked state is stored under:
 
 ```text
 <game>/.mgs-installer/mgshdfix/
+<game>/.mgs-installer/mgs2communitybugfix/
+<game>/.mgs-installer/mgs2communitybugfix2x/
+<game>/.mgs-installer/mgs2communitybugfix4x/
 ```
 
-Legacy `.mgshdfix-files.txt` and `.mgshdfix-backup/` installs remain
-recognizable for update and uninstall.
+MGSHDFix release `logs/` content is excluded. Files from older root-level
+MGSHDFix layouts are removed during tracked updates so they cannot conflict with
+the current `plugins/`, `wininet.dll`, and `winhttp.dll` layout.
 
 ## Uninstall
 
@@ -72,14 +112,14 @@ recognizable for update and uninstall.
 ./installers/mgs2/install-mgs2.bash --uninstall
 ```
 
-Only tracked files are removed, backed-up originals are restored, and
-`MGSHDFix.settings` is preserved. Remove the DLL overrides from Steam afterward
-if no other mod requires them.
+Only tracked files are removed, backed-up originals are restored, the
+Community Bugfix mod-order note is removed, and `MGSHDFix.settings` is
+preserved. Remove the DLL overrides from Steam afterward if no other mod
+requires them.
 
 ## Requirements
 
 - Steam Deck or desktop Linux
-- Steam or Flatpak Steam
 - Bash 5, Python 3, and `curl`
 - Protontricks to run the MGSHDFix configuration tool on Linux
 

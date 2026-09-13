@@ -104,7 +104,7 @@ game-specific documentation.
 | Installer | Steam AppID | Default components | Optional components |
 |---|---:|---|---|
 | `mgs1/install-mgs1.bash` | 2131630 | MGSM2Fix | None initially |
-| `mgs2/install-mgs2.bash` | 2131640 | MGSHDFix | None initially |
+| `mgs2/install-mgs2.bash` | 2131640 | MGSHDFix and MGS2 Community Bugfix Compilation | Optional 2x or 4x Community Bugfix texture add-on |
 | `mgs3/install-mgs3.bash` | 2131650 | MGSHDFix and MGS3CrouchWalk | `--no-crouchwalk` |
 | `mgs4/install-mgs4.bash` | 2492670 | MGSPatriotFix | MGSM2Fix for the MGS1 flashback; MGS4 Mod Loader |
 | `mgspw/install-mgspw.bash` | 2492660 | MGSPatriotFix | None initially |
@@ -129,6 +129,7 @@ Installers MUST prefer published release assets over checked-out source.
 |---|---|---|
 | MGSM2Fix | GitHub Releases | `nuggslet/MGSM2Fix` |
 | MGSHDFix | GitHub Releases | `ShizCalev/MGSHDFix` |
+| MGS2 Community Bugfix Compilation | GitHub Releases | `ShizCalev/MGS2-Community-Bugfix-Compilation` |
 | MGS3CrouchWalk | GitHub Releases | `cipherxof/MGS3CrouchWalk` |
 | MGSPatriotFix | GitHub Releases | `ShizCalev/MGSPatriotFix` |
 | MGSVFix | Codeberg Forgejo Releases | `Lyall/MGSVFix` |
@@ -144,6 +145,13 @@ Release behavior MUST meet these requirements:
    case-insensitive asset-name rule:
    - MGSM2Fix: ZIP name containing `MGSM2Fix`.
    - MGSHDFix: ZIP name containing `MGSHDFix`.
+   - MGS2 Community Bugfix base: ZIP name containing `Base`, excluding the 2x
+     and 4x add-on names.
+   - MGS2 Community Bugfix 2x add-on: ZIP name containing `2x` and
+     `Upscaled`, excluding `Base` and `4x`.
+   - MGS2 Community Bugfix 4x add-on: multipart asset names containing `4x`
+     and `Upscaled` with `.zip.001`, `.zip.002`, ... suffixes, excluding
+     `Base` and `2x`.
    - MGS3CrouchWalk: ZIP name containing `MGS3CrouchWalk` or
      `MGS3_CrouchWalk`.
    - MGS4 PatriotFix: asset containing `MGS4`, excluding Peace Walker names.
@@ -475,7 +483,28 @@ features without promising that this installer configures those features.
 
 `install-mgs2.bash` MUST install MGSHDFix into the MGS2 game root.
 
+It MUST also install the MGS2 Community Bugfix Compilation base package by
+default.
+
+MGSHDFix remains the primary component. Therefore the common `--zip` and
+`--version` options apply to MGSHDFix.
+
 It MUST exclude release `logs/` content and manage known stale MGSHDFix files.
+It MUST also:
+
+- expose `--no-community-bugfix`;
+- support `--community-bugfix-zip PATH` and SHOULD support
+  `--community-bugfix-version TAG`;
+- support optional `--textures-2x` and `--textures-4x` add-ons with matching
+  local ZIP and version-selection options;
+- reject selecting both texture add-ons at once;
+- reject Community Bugfix texture add-ons unless the base package is selected;
+- preserve `plugins/MGS2-Community-Bugfix-Compilation.ini` by default and reset
+  it only with `--reset-ini`;
+- install the Community Bugfix base before its optional texture add-on;
+- remove a previously tracked 2x add-on before installing 4x, and vice versa;
+- write a mod-order guidance note under `.mgs-installer/`.
+
 After installation it MUST print:
 
 - the required DLL overrides;
@@ -483,6 +512,8 @@ After installation it MUST print:
   Default/Original;
 - the discovered MGSHDFix configuration-tool path;
 - the Protontricks requirement for the configuration tool.
+- the Community Bugfix configuration path, when installed;
+- the recommended mod-load order guidance.
 
 ### 7.3 Metal Gear Solid 3
 

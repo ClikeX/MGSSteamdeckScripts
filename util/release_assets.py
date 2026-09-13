@@ -35,7 +35,7 @@ def _compile(pattern: str | None, label: str) -> re.Pattern[str] | None:
         raise ReleaseSelectionError(f"invalid {label} regex: {exc}") from exc
 
 
-def select_release_asset(
+def _eligible_assets(
     release: dict[str, Any],
     *,
     match: str | None = None,
@@ -43,7 +43,7 @@ def select_release_asset(
     extension: str = r"\.zip$",
     allow_prerelease: bool = False,
     download_prefix: str | None = None,
-) -> tuple[str, str, str]:
+) -> tuple[str, list[tuple[str, str]], list[tuple[str, str]]]:
     if release.get("draft"):
         raise ReleaseSelectionError("release is a draft")
     if release.get("prerelease") and not allow_prerelease:
@@ -88,6 +88,27 @@ def select_release_asset(
         and (reject_re is None or not reject_re.search(asset[0]))
     ]
 
+    return tag, eligible, matched
+
+
+def select_release_asset(
+    release: dict[str, Any],
+    *,
+    match: str | None = None,
+    reject: str | None = None,
+    extension: str = r"\.zip$",
+    allow_prerelease: bool = False,
+    download_prefix: str | None = None,
+) -> tuple[str, str, str]:
+    tag, eligible, matched = _eligible_assets(
+        release,
+        match=match,
+        reject=reject,
+        extension=extension,
+        allow_prerelease=allow_prerelease,
+        download_prefix=download_prefix,
+    )
+
     if len(matched) == 1:
         chosen = matched[0]
     elif not matched and len(eligible) == 1:
@@ -105,6 +126,33 @@ def select_release_asset(
         )
 
     return tag, chosen[0], chosen[1]
+
+
+def select_release_assets(
+    release: dict[str, Any],
+    *,
+    match: str | None = None,
+    reject: str | None = None,
+    extension: str = r"\.zip$",
+    allow_prerelease: bool = False,
+    download_prefix: str | None = None,
+) -> tuple[str, list[tuple[str, str]]]:
+    tag, eligible, matched = _eligible_assets(
+        release,
+        match=match,
+        reject=reject,
+        extension=extension,
+        allow_prerelease=allow_prerelease,
+        download_prefix=download_prefix,
+    )
+
+    if matched:
+        return tag, sorted(matched, key=lambda asset: asset[0].lower())
+    if len(eligible) == 1:
+        return tag, eligible
+    if not eligible:
+        raise ReleaseSelectionError("release has no eligible assets")
+    raise ReleaseSelectionError("no release asset matched the requested component")
 
 
 def main(argv: list[str] | None = None) -> int:

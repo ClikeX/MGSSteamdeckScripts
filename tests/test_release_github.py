@@ -9,7 +9,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "util"))
 
-from release_assets import ReleaseSelectionError, load_release, select_release_asset
+from release_assets import (
+    ReleaseSelectionError,
+    load_release,
+    select_release_asset,
+    select_release_assets,
+)
 from release_github import _release_from_html
 
 
@@ -110,6 +115,55 @@ class GitHubReleaseTests(unittest.TestCase):
         self.path.write_text("{", encoding="utf-8")
         with self.assertRaisesRegex(ReleaseSelectionError, "could not parse"):
             load_release(self.path)
+
+    def test_selects_all_matching_assets(self) -> None:
+        release = {
+            "tag_name": "3.0.0",
+            "draft": False,
+            "prerelease": False,
+            "assets": [
+                {
+                    "name": "MGS2-Community-Bugfix-Compilation_4x_Upscaled_Addon_v3.0.0.zip.001",
+                    "browser_download_url": (
+                        "https://github.com/ShizCalev/MGS2-Community-Bugfix-Compilation/"
+                        "releases/download/3.0.0/"
+                        "MGS2-Community-Bugfix-Compilation_4x_Upscaled_Addon_v3.0.0.zip.001"
+                    ),
+                },
+                {
+                    "name": "MGS2-Community-Bugfix-Compilation_4x_Upscaled_Addon_v3.0.0.zip.002",
+                    "browser_download_url": (
+                        "https://github.com/ShizCalev/MGS2-Community-Bugfix-Compilation/"
+                        "releases/download/3.0.0/"
+                        "MGS2-Community-Bugfix-Compilation_4x_Upscaled_Addon_v3.0.0.zip.002"
+                    ),
+                },
+                {
+                    "name": "MGS2-Community-Bugfix-Compilation_Base_v3.0.0.zip",
+                    "browser_download_url": (
+                        "https://github.com/ShizCalev/MGS2-Community-Bugfix-Compilation/"
+                        "releases/download/3.0.0/MGS2-Community-Bugfix-Compilation_Base_v3.0.0.zip"
+                    ),
+                },
+            ],
+        }
+        selected = select_release_assets(
+            release,
+            match=r"4x.*Upscaled",
+            extension=r"\.zip\.[0-9]{3}$",
+            download_prefix=(
+                "https://github.com/ShizCalev/MGS2-Community-Bugfix-Compilation/"
+                "releases/download/3.0.0/"
+            ),
+        )
+        self.assertEqual("3.0.0", selected[0])
+        self.assertEqual(
+            [
+                "MGS2-Community-Bugfix-Compilation_4x_Upscaled_Addon_v3.0.0.zip.001",
+                "MGS2-Community-Bugfix-Compilation_4x_Upscaled_Addon_v3.0.0.zip.002",
+            ],
+            [name for name, _ in selected[1]],
+        )
 
 
 if __name__ == "__main__":

@@ -108,6 +108,25 @@ mgs_installer_github_release() {
 	"${command[@]}"
 }
 
+mgs_installer_github_release_assets() {
+	local repo=$1
+	local match_regex=${2-}
+	local reject_regex=${3-}
+	local extension_regex=${4:-\\.zip$}
+	local version=${5-${MGS_CLI_VERSION}}
+	local -a command=(
+		"$MGS_UTIL_DIR/release_github.py"
+		"$repo"
+		--all
+		--extension "$extension_regex"
+	)
+
+	[[ -n $version ]] && command+=(--tag "$version")
+	[[ -n $match_regex ]] && command+=(--match "$match_regex")
+	[[ -n $reject_regex ]] && command+=(--reject "$reject_regex")
+	"${command[@]}"
+}
+
 mgs_installer_forgejo_release() {
 	local base_url=$1
 	local repo=$2
