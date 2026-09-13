@@ -168,6 +168,29 @@ class GitHubReleaseTests(unittest.TestCase):
             [name for name, _ in selected[1]],
         )
 
+    def test_select_release_assets_rejects_ambiguous_without_match(self) -> None:
+        release = {
+            "tag_name": "3.0.0",
+            "draft": False,
+            "prerelease": False,
+            "assets": [
+                {
+                    "name": "part-a.zip",
+                    "browser_download_url": (
+                        "https://github.com/example/mod/releases/download/3.0.0/part-a.zip"
+                    ),
+                },
+                {
+                    "name": "part-b.zip",
+                    "browser_download_url": (
+                        "https://github.com/example/mod/releases/download/3.0.0/part-b.zip"
+                    ),
+                },
+            ],
+        }
+        with self.assertRaisesRegex(ReleaseSelectionError, "ambiguous"):
+            select_release_assets(release)
+
     def test_resolve_release_assets_honors_web_base(self) -> None:
         release = {
             "tag_name": "3.0.0",

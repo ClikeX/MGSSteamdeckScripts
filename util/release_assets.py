@@ -147,6 +147,11 @@ def select_release_assets(
     )
 
     if matched:
+        if not match and len(matched) > 1:
+            names = ", ".join(name for name, _ in matched)
+            raise ReleaseSelectionError(
+                f"release asset selection is ambiguous: {names}"
+            )
         return tag, sorted(matched, key=lambda asset: asset[0].lower())
     if len(eligible) == 1:
         return tag, eligible
