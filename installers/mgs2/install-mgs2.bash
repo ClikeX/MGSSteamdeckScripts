@@ -225,7 +225,19 @@ mgs2_bugfix_acquire_base() {
 	rm -rf "$stage_root"
 	mkdir -p "$stage_root" || return
 	cp -R "$extracted_root"/. "$stage_root"/ || return
-	mgs2_write_mod_order_note "$stage_root" || return
+	mkdir -p "$(dirname -- "$stage_root/$MGS2_MOD_ORDER_NOTE")" || return
+	cat > "$stage_root/$MGS2_MOD_ORDER_NOTE" <<EOF
+Recommended MGS2 mod load order (first loaded to last):
+1. MGSHDFix
+2. Knight_Killer's MGS2 Better Audio Mod
+3. MGS2 Community Bugfix Compilation - Base
+4. MGS2 Community Bugfix Compilation - AI Upscaled Texture Add-on (if installed)
+5. MGS2 Demastered Texture Pack (if installed)
+6. All other mods
+
+The installer always applies the Community Bugfix base before its optional
+texture add-on so direct installs follow the required overwrite order.
+EOF
 	MGS2_COMMUNITY_BUGFIX_SOURCE=$stage_root
 }
 
@@ -353,22 +365,36 @@ mgs2_bugfix_install_textures() {
 		texture_ini_paths texture_stale_paths
 }
 
-mgs2_write_mod_order_note() {
+mgs2_finalize_texture_switch() {
 	local target=$1
+	local old_size=$2
+	local new_size=$3
+	local old_component new_component relative_path old_backup new_backup
 
-	mkdir -p "$(dirname -- "$target/$MGS2_MOD_ORDER_NOTE")" || return
-	cat > "$target/$MGS2_MOD_ORDER_NOTE" <<EOF
-Recommended MGS2 mod load order (first loaded to last):
-1. MGSHDFix
-2. Knight_Killer's MGS2 Better Audio Mod
-3. MGS2 Community Bugfix Compilation - Base
-4. MGS2 Community Bugfix Compilation - AI Upscaled Texture Add-on (if installed)
-5. MGS2 Demastered Texture Pack (if installed)
-6. All other mods
+	old_component=$(mgs2_texture_component "$old_size") || return
+	new_component=$(mgs2_texture_component "$new_size") || return
 
-The installer always applies the Community Bugfix base before its optional
-texture add-on so direct installs follow the required overwrite order.
-EOF
+	if (( MGS_CLI_DRY_RUN )); then
+		printf 'would replace tracked %s state with %s\n' \
+			"$(mgs2_texture_label "$old_size")" \
+			"$(mgs2_texture_label "$new_size")"
+		return 0
+	fi
+
+	while IFS= read -r relative_path; do
+		[[ -n $relative_path ]] || continue
+		old_backup=$(mgs_state_find_backup "$target" "$old_component" "$relative_path" || true)
+		new_backup=$(mgs_state_backup_dir "$target" "$new_component")/$relative_path
+		if [[ -z $old_backup ]]; then
+			rm -f "$new_backup"
+			continue
+		fi
+		mkdir -p "$(dirname -- "$new_backup")" || return
+		cp -a "$old_backup" "$new_backup" || return
+	done < <(mgs_state_owned_files "$target" "$old_component")
+
+	rm -rf "$(mgs_state_dir "$target" "$old_component")"
+	rmdir "$target/.mgs-installer" 2>/dev/null || true
 }
 
 mgs_cli_parse mgs2_parse_option "$@" || exit $?
@@ -495,18 +521,21 @@ if (( MGS2_WANT_COMMUNITY_BUGFIX )); then
 fi
 if [[ -n $MGS2_TEXTURE_PACK ]]; then
 	OTHER_TEXTURE_PACK=
+	HAD_OTHER_TEXTURE_PACK=0
 	case "$MGS2_TEXTURE_PACK" in
 		2x) OTHER_TEXTURE_PACK=4x ;;
 		4x) OTHER_TEXTURE_PACK=2x ;;
 	esac
 	if mgs_state_has_state "$TARGET" \
 		"$(mgs2_texture_component "$OTHER_TEXTURE_PACK")"; then
-		mgs_step "Removing previously tracked $(mgs2_texture_label "$OTHER_TEXTURE_PACK")"
-		mgs_state_uninstall "$TARGET" \
-			"$(mgs2_texture_component "$OTHER_TEXTURE_PACK")" "$MGS_CLI_DRY_RUN"
+		HAD_OTHER_TEXTURE_PACK=1
 	fi
 	mgs_step "Installing $(mgs2_texture_label "$MGS2_TEXTURE_PACK") into $TARGET"
 	mgs2_bugfix_install_textures "$TARGET" "$MGS2_TEXTURE_PACK" "$MGS_CLI_DRY_RUN"
+	if (( HAD_OTHER_TEXTURE_PACK )); then
+		mgs2_finalize_texture_switch "$TARGET" \
+			"$OTHER_TEXTURE_PACK" "$MGS2_TEXTURE_PACK"
+	fi
 fi
 
 if (( MGS_CLI_DRY_RUN )); then
