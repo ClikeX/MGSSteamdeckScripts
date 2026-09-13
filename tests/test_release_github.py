@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import io
 import json
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "util"))
 
+import release_github
 from release_assets import (
     ReleaseSelectionError,
     load_release,
@@ -163,6 +166,71 @@ class GitHubReleaseTests(unittest.TestCase):
                 "MGS2-Community-Bugfix-Compilation_4x_Upscaled_Addon_v3.0.0.zip.002",
             ],
             [name for name, _ in selected[1]],
+        )
+
+    def test_resolve_release_assets_honors_web_base(self) -> None:
+        release = {
+            "tag_name": "3.0.0",
+            "draft": False,
+            "prerelease": False,
+            "assets": [
+                {
+                    "name": "pack.zip.001",
+                    "browser_download_url": (
+                        "https://downloads.example/owner/repo/releases/download/3.0.0/pack.zip.001"
+                    ),
+                },
+                {
+                    "name": "pack.zip.002",
+                    "browser_download_url": (
+                        "https://downloads.example/owner/repo/releases/download/3.0.0/pack.zip.002"
+                    ),
+                },
+            ],
+        }
+        with mock.patch.object(release_github, "_fetch_json", return_value=release):
+            tag, assets = release_github.resolve_release_assets(
+                "owner/repo",
+                match=r"pack",
+                extension=r"\.zip\.[0-9]{3}$",
+                web_base="https://downloads.example",
+            )
+        self.assertEqual("3.0.0", tag)
+        self.assertEqual(
+            [
+                (
+                    "pack.zip.001",
+                    "https://downloads.example/owner/repo/releases/download/3.0.0/pack.zip.001",
+                ),
+                (
+                    "pack.zip.002",
+                    "https://downloads.example/owner/repo/releases/download/3.0.0/pack.zip.002",
+                ),
+            ],
+            assets,
+        )
+
+    def test_main_all_prints_each_asset(self) -> None:
+        with (
+            mock.patch.object(
+                release_github,
+                "resolve_release_assets",
+                return_value=(
+                    "3.0.0",
+                    [
+                        ("pack.zip.001", "https://example.invalid/pack.zip.001"),
+                        ("pack.zip.002", "https://example.invalid/pack.zip.002"),
+                    ],
+                ),
+            ),
+            mock.patch("sys.stdout", new_callable=io.StringIO) as stdout,
+        ):
+            status = release_github.main(["owner/repo", "--all"])
+        self.assertEqual(0, status)
+        self.assertEqual(
+            "3.0.0\tpack.zip.001\thttps://example.invalid/pack.zip.001\n"
+            "3.0.0\tpack.zip.002\thttps://example.invalid/pack.zip.002\n",
+            stdout.getvalue(),
         )
 
 

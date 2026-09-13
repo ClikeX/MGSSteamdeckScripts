@@ -22,6 +22,8 @@ MGS2_WANT_COMMUNITY_BUGFIX=1
 MGS2_COMMUNITY_BUGFIX_ZIP=
 MGS2_COMMUNITY_BUGFIX_VERSION=
 MGS2_TEXTURE_PACK=
+MGS2_TEXTURE_2X_SELECTED=0
+MGS2_TEXTURE_4X_SELECTED=0
 MGS2_TEXTURE_2X_ZIP=
 MGS2_TEXTURE_2X_VERSION=
 MGS2_TEXTURE_4X_ZIP=
@@ -97,12 +99,14 @@ mgs2_parse_option() {
 			;;
 		--textures-2x)
 			MGS2_TEXTURE_PACK=2x
+			MGS2_TEXTURE_2X_SELECTED=1
 			mgs_cli_mark_install_selection
 			MGS_CLI_CONSUMED=1
 			;;
 		--textures-2x-zip)
 			value=$(mgs_cli_value "$1" "${2-}") || return
 			MGS2_TEXTURE_PACK=2x
+			MGS2_TEXTURE_2X_SELECTED=1
 			MGS2_TEXTURE_2X_ZIP=$value
 			mgs_cli_mark_install_selection
 			MGS_CLI_CONSUMED=2
@@ -110,6 +114,7 @@ mgs2_parse_option() {
 		--textures-2x-zip=*)
 			value=$(mgs_cli_value --textures-2x-zip "${1#*=}") || return
 			MGS2_TEXTURE_PACK=2x
+			MGS2_TEXTURE_2X_SELECTED=1
 			MGS2_TEXTURE_2X_ZIP=$value
 			mgs_cli_mark_install_selection
 			MGS_CLI_CONSUMED=1
@@ -117,6 +122,7 @@ mgs2_parse_option() {
 		--textures-2x-version)
 			value=$(mgs_cli_value "$1" "${2-}") || return
 			MGS2_TEXTURE_PACK=2x
+			MGS2_TEXTURE_2X_SELECTED=1
 			MGS2_TEXTURE_2X_VERSION=$value
 			mgs_cli_mark_install_selection
 			MGS_CLI_CONSUMED=2
@@ -124,18 +130,21 @@ mgs2_parse_option() {
 		--textures-2x-version=*)
 			value=$(mgs_cli_value --textures-2x-version "${1#*=}") || return
 			MGS2_TEXTURE_PACK=2x
+			MGS2_TEXTURE_2X_SELECTED=1
 			MGS2_TEXTURE_2X_VERSION=$value
 			mgs_cli_mark_install_selection
 			MGS_CLI_CONSUMED=1
 			;;
 		--textures-4x)
 			MGS2_TEXTURE_PACK=4x
+			MGS2_TEXTURE_4X_SELECTED=1
 			mgs_cli_mark_install_selection
 			MGS_CLI_CONSUMED=1
 			;;
 		--textures-4x-zip)
 			value=$(mgs_cli_value "$1" "${2-}") || return
 			MGS2_TEXTURE_PACK=4x
+			MGS2_TEXTURE_4X_SELECTED=1
 			MGS2_TEXTURE_4X_ZIP=$value
 			mgs_cli_mark_install_selection
 			MGS_CLI_CONSUMED=2
@@ -143,6 +152,7 @@ mgs2_parse_option() {
 		--textures-4x-zip=*)
 			value=$(mgs_cli_value --textures-4x-zip "${1#*=}") || return
 			MGS2_TEXTURE_PACK=4x
+			MGS2_TEXTURE_4X_SELECTED=1
 			MGS2_TEXTURE_4X_ZIP=$value
 			mgs_cli_mark_install_selection
 			MGS_CLI_CONSUMED=1
@@ -150,6 +160,7 @@ mgs2_parse_option() {
 		--textures-4x-version)
 			value=$(mgs_cli_value "$1" "${2-}") || return
 			MGS2_TEXTURE_PACK=4x
+			MGS2_TEXTURE_4X_SELECTED=1
 			MGS2_TEXTURE_4X_VERSION=$value
 			mgs_cli_mark_install_selection
 			MGS_CLI_CONSUMED=2
@@ -157,6 +168,7 @@ mgs2_parse_option() {
 		--textures-4x-version=*)
 			value=$(mgs_cli_value --textures-4x-version "${1#*=}") || return
 			MGS2_TEXTURE_PACK=4x
+			MGS2_TEXTURE_4X_SELECTED=1
 			MGS2_TEXTURE_4X_VERSION=$value
 			mgs_cli_mark_install_selection
 			MGS_CLI_CONSUMED=1
@@ -384,6 +396,10 @@ if [[ -n $MGS2_TEXTURE_2X_ZIP && -n $MGS2_TEXTURE_2X_VERSION ]]; then
 fi
 if [[ -n $MGS2_TEXTURE_4X_ZIP && -n $MGS2_TEXTURE_4X_VERSION ]]; then
 	mgs_cli_error "--textures-4x-zip and --textures-4x-version cannot be combined"
+	exit $?
+fi
+if (( MGS2_TEXTURE_2X_SELECTED && MGS2_TEXTURE_4X_SELECTED )); then
+	mgs_cli_error "only one Community Bugfix texture add-on may be selected"
 	exit $?
 fi
 if (( MGS_CLI_RESET_INI && ! MGS2_WANT_COMMUNITY_BUGFIX )); then

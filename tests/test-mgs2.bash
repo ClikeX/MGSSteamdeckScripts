@@ -133,6 +133,15 @@ set -e
 assert_status 64 "$status" \
 	"MGS2 rejects texture add-ons without the Community Bugfix base"
 
+set +e
+"$installer" --path "$game" --zip "$hdfix_archive" \
+	--community-bugfix-zip "$bugfix_archive" \
+	--textures-2x --textures-4x >/dev/null 2>&1
+status=$?
+set -e
+assert_status 64 "$status" \
+	"MGS2 rejects selecting both Community Bugfix texture add-ons"
+
 "$installer" --path "$game" --uninstall >/dev/null
 assert_eq "original-loader" "$(cat "$game/wininet.dll")" \
 	"MGS2 uninstall restores the original loader"
