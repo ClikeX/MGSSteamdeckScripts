@@ -185,7 +185,7 @@ mgs2_bugfix_acquire_base() {
 	local workspace=$1
 	local zip_override=${2-}
 	local version=${3-}
-	local zip release_tag asset_name asset_url
+	local zip release_tag asset_name asset_url extracted_root stage_root
 
 	mkdir -p "$workspace"
 	if [[ -n $zip_override ]]; then
@@ -206,9 +206,15 @@ mgs2_bugfix_acquire_base() {
 	fi
 
 	mgs_step "Validating and extracting MGS2 Community Bugfix base"
-	MGS2_COMMUNITY_BUGFIX_SOURCE=$(
+	extracted_root=$(
 		mgs_installer_extract_archive "$zip" "$workspace/mgs2-community-bugfix-base"
 	) || return
+	stage_root=$workspace/mgs2-community-bugfix-base-staged
+	rm -rf "$stage_root"
+	mkdir -p "$stage_root" || return
+	cp -R "$extracted_root"/. "$stage_root"/ || return
+	mgs2_write_mod_order_note "$stage_root" || return
+	MGS2_COMMUNITY_BUGFIX_SOURCE=$stage_root
 }
 
 mgs2_bugfix_stage_textures() {
@@ -445,10 +451,6 @@ if (( MGS_CLI_UNINSTALL )); then
 		mgs_info "MGSHDFix removed from $TARGET"
 		UNINSTALLED=1
 	fi
-	if (( ! MGS_CLI_DRY_RUN )); then
-		rm -f "$TARGET/$MGS2_MOD_ORDER_NOTE"
-		rmdir --ignore-fail-on-non-empty "$(dirname -- "$TARGET/$MGS2_MOD_ORDER_NOTE")" 2>/dev/null || true
-	fi
 	if (( ! UNINSTALLED )); then
 		mgs_warn "No tracked MGS2 components were found in $TARGET"
 		exit 3
@@ -520,7 +522,6 @@ if (( MGS2_WANT_COMMUNITY_BUGFIX )); then
 	COMMUNITY_CONFIG_PATH="  $TARGET/plugins/MGS2-Community-Bugfix-Compilation.ini"
 	COMMUNITY_NOTE_PATH="  $TARGET/$MGS2_MOD_ORDER_NOTE"
 	COMMUNITY_INI_SUMMARY="The Community Bugfix INI is preserved by default and reset only with --reset-ini."
-	mgs2_write_mod_order_note "$TARGET"
 fi
 
 cat <<EOF
