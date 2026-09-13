@@ -144,9 +144,12 @@ test_pass "MGS2 uninstall removes the Community Bugfix plugin"
 [[ ! -e "$game/textures/flatlist/ovr_stm/_win/col_orange2.bmp.ctxr" ]] ||
 	test_fail "MGS2 texture add-on survived uninstall"
 test_pass "MGS2 uninstall removes the Community Bugfix texture add-on"
-[[ ! -e "$game/plugins/MGS2-Community-Bugfix-Compilation.ini" ]] ||
-	test_fail "MGS2 Community Bugfix INI survived uninstall"
-test_pass "MGS2 uninstall removes the Community Bugfix INI"
+assert_eq "user-bugfix" \
+	"$(cat "$game/plugins/MGS2-Community-Bugfix-Compilation.ini")" \
+	"MGS2 uninstall restores the backed-up Community Bugfix INI"
+[[ ! -e "$game/plugins/MGS2-Community-Bugfix-Compilation.ini.new" ]] ||
+	test_fail "MGS2 Community Bugfix INI defaults survived uninstall"
+test_pass "MGS2 uninstall removes the Community Bugfix INI defaults copy"
 [[ ! -e "$mod_order_note" ]] ||
 	test_fail "MGS2 mod-order note survived uninstall"
 test_pass "MGS2 uninstall removes the mod-order note"

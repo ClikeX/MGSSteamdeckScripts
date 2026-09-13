@@ -211,13 +211,36 @@ mgs2_bugfix_acquire_base() {
 	) || return
 }
 
+mgs2_bugfix_stage_textures() {
+	local extracted_root=$1
+	local stage_root=$2
+	local source_dir=
+
+	if [[ -d $extracted_root/textures/flatlist/ovr_stm ]]; then
+		source_dir=$extracted_root/textures/flatlist/ovr_stm
+	elif [[ -d $extracted_root/flatlist/ovr_stm ]]; then
+		source_dir=$extracted_root/flatlist/ovr_stm
+	elif [[ -d $extracted_root/ovr_stm ]]; then
+		source_dir=$extracted_root/ovr_stm
+	elif [[ -d $extracted_root/_win ]]; then
+		source_dir=$extracted_root
+	fi
+
+	[[ -n $source_dir ]] ||
+		mgs_die "could not locate Community Bugfix texture payload content"
+
+	rm -rf "$stage_root"
+	mkdir -p "$stage_root/textures/flatlist" || return
+	cp -R "$source_dir" "$stage_root/textures/flatlist/ovr_stm" || return
+}
+
 mgs2_bugfix_acquire_textures() {
 	local workspace=$1
 	local size=$2
 	local zip_override=${3-}
 	local version=${4-}
 	local zip release_tag asset_name asset_url part_tag part_name part_url part_number
-	local concat_zip expected_part
+	local concat_zip expected_part extracted_root stage_root
 	local -a asset_rows=()
 
 	mkdir -p "$workspace"
@@ -277,9 +300,12 @@ mgs2_bugfix_acquire_textures() {
 	fi
 
 	mgs_step "Validating and extracting $(mgs2_texture_label "$size")"
-	MGS2_TEXTURE_SOURCE=$(
+	extracted_root=$(
 		mgs_installer_extract_archive "$zip" "$workspace/mgs2-community-bugfix-$size"
 	) || return
+	stage_root=$workspace/mgs2-community-bugfix-$size-staged
+	mgs2_bugfix_stage_textures "$extracted_root" "$stage_root" || return
+	MGS2_TEXTURE_SOURCE=$stage_root
 }
 
 mgs2_bugfix_install_base() {
